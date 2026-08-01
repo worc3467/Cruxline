@@ -25,3 +25,4 @@ To use real images, replace each `.image-placeholder` block with an `<img>` elem
 3. In Vercel, create a new project and select the repository.
 4. No build command or framework preset is required.
 5. Deploy, then add your custom domain under **Project Settings → Domains**.
+Update
