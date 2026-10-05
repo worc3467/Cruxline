@@ -3150,11 +3150,11 @@ body:not(.mission-active):not(.about-active) .nav {
 </div>
 </div>
 </section></div><div class="page-panel approach-page model-page" id="model-page"><section class="tab-hero approach approach-hero">
-<video aria-hidden="true" autoplay="" class="approach-hero-video" loop="" muted="" playsinline="" preload="auto">
-<source src="mission-video.mp4" type="video/mp4"/>
+<video aria-hidden="true" autoplay="" class="model-hero-video" muted="" playsinline="" preload="auto">
+<source src="model-video.mp4" type="video/mp4"/>
 </video>
 <div class="container hero-content approach-hero-content">
-<h1 class="display">A new investment model.</h1>
+<h1 class="display">A new investment model designed for impact.</h1>
 </div>
 </section><section class="how-work content-light">
 <div class="container">
@@ -3267,39 +3267,90 @@ body:not(.mission-active):not(.about-active) .nav {
     const panels = [...document.querySelectorAll('.page-panel')];
     const links = [...document.querySelectorAll('.page-link')];
 
+    const aboutVideo = document.querySelector('.about-hero-video');
+    const focusVideo = document.querySelector('#focus-page .approach-hero-video');
+    const modelVideo = document.querySelector('#model-page .model-hero-video');
+    const missionVideo = document.querySelector('.mission-hero-video');
+
+    let modelReverseFrame = null;
+    let modelReverseLast = null;
+
+    function stopModelReverse() {
+      if (modelReverseFrame) cancelAnimationFrame(modelReverseFrame);
+      modelReverseFrame = null;
+      modelReverseLast = null;
+    }
+
+    function playModelForward(fromStart = false) {
+      if (!modelVideo) return;
+      stopModelReverse();
+      if (fromStart) modelVideo.currentTime = 0;
+      modelVideo.playbackRate = 1;
+      modelVideo.play().catch(() => {});
+    }
+
+    function playModelReverse() {
+      if (!modelVideo) return;
+      modelVideo.pause();
+      stopModelReverse();
+
+      function step(timestamp) {
+        if (!document.getElementById('model-page')?.classList.contains('active')) {
+          stopModelReverse();
+          return;
+        }
+
+        if (modelReverseLast === null) modelReverseLast = timestamp;
+        const delta = Math.min((timestamp - modelReverseLast) / 1000, 0.08);
+        modelReverseLast = timestamp;
+
+        modelVideo.currentTime = Math.max(0, modelVideo.currentTime - delta);
+
+        if (modelVideo.currentTime <= 0.03) {
+          modelVideo.currentTime = 0;
+          playModelForward(false);
+          return;
+        }
+
+        modelReverseFrame = requestAnimationFrame(step);
+      }
+
+      modelReverseFrame = requestAnimationFrame(step);
+    }
+
+    if (modelVideo) {
+      modelVideo.loop = false;
+      modelVideo.addEventListener('ended', playModelReverse);
+    }
+
     function showPage(page, smooth = true) {
       const requested = page === 'approach' ? 'focus' : page;
       const selected = document.getElementById(`${requested}-page`) ? requested : 'mission';
+
       panels.forEach(panel => panel.classList.toggle('active', panel.id === `${selected}-page`));
       links.forEach(link => link.classList.toggle('active', link.dataset.page === selected && !link.classList.contains('brand')));
       body.classList.toggle('mission-active', selected === 'mission');
       body.classList.toggle('about-active', selected === 'about');
 
-      const aboutVideo = document.querySelector('.about-hero-video');
       if (aboutVideo) {
-        if (selected === 'about') {
-          aboutVideo.play().catch(() => {});
+        selected === 'about' ? aboutVideo.play().catch(() => {}) : aboutVideo.pause();
+      }
+
+      if (focusVideo) {
+        selected === 'focus' ? focusVideo.play().catch(() => {}) : focusVideo.pause();
+      }
+
+      if (modelVideo) {
+        if (selected === 'model') {
+          playModelForward(true);
         } else {
-          aboutVideo.pause();
+          stopModelReverse();
+          modelVideo.pause();
         }
       }
 
-      const approachVideo = document.querySelector('.approach-hero-video');
-      if (approachVideo) {
-        if (selected === 'focus') {
-          approachVideo.play().catch(() => {});
-        } else {
-          approachVideo.pause();
-        }
-      }
-
-      const missionVideo = document.querySelector('.mission-hero-video');
       if (missionVideo) {
-        if (selected === 'mission') {
-          missionVideo.play().catch(() => {});
-        } else {
-          missionVideo.pause();
-        }
+        selected === 'mission' ? missionVideo.play().catch(() => {}) : missionVideo.pause();
       }
 
       window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
